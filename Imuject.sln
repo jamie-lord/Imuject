@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28010.2003
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imuject", "Imuject\Imuject.csproj", "{4A3E9B23-06AE-4D3E-9E9C-354704070852}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImujectTests", "ImujectTests\ImujectTests.csproj", "{A78BB4F2-5DCC-4AD5-BF4E-D2998B40B038}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{4A3E9B23-06AE-4D3E-9E9C-354704070852}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A3E9B23-06AE-4D3E-9E9C-354704070852}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A3E9B23-06AE-4D3E-9E9C-354704070852}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A78BB4F2-5DCC-4AD5-BF4E-D2998B40B038}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A78BB4F2-5DCC-4AD5-BF4E-D2998B40B038}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A78BB4F2-5DCC-4AD5-BF4E-D2998B40B038}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A78BB4F2-5DCC-4AD5-BF4E-D2998B40B038}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
