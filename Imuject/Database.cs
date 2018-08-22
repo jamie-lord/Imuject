@@ -1,12 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Security.Cryptography;
 using System.Text;
 using MarcelloDB;
-using MarcelloDB.Platform;
 using MarcelloDB.Index;
 using MarcelloDB.Collections;
 using System.Linq;
@@ -37,23 +33,29 @@ namespace Imuject
 
             public int Index { get; set; }
 
+            public int Id { get; set; }
+
+            public int Version { get; set; } = -1;
+
             public void InsertOp(int index, string previousHash)
             {
                 Index = index;
                 PreviousHash = previousHash;
                 Timestamp = DateTime.Now;
+                // If this is a new object the version number will be -1, incrementing it to 0 signifies this is the first version of this object
+                Version++;
                 Hash = CalculateHash();
             }
 
             public string CalculateHash()
             {
-                string stringForHashing = Index + PreviousHash + Timestamp + Json;
+                string stringForHashing = Index + Version + PreviousHash + Timestamp + Json;
                 SHA256Managed crypt = new SHA256Managed();
-                string hash = String.Empty;
+                string hash = string.Empty;
                 byte[] crypto = crypt.ComputeHash(Encoding.ASCII.GetBytes(stringForHashing), 0, Encoding.ASCII.GetByteCount(stringForHashing));
-                foreach (byte theByte in crypto)
+                for (int i = 0; i < crypto.Length; i++)
                 {
-                    hash += theByte.ToString("x2");
+                    hash += crypto[i].ToString("x2");
                 }
                 return hash;
             }
@@ -61,13 +63,15 @@ namespace Imuject
 
         public class Chain : IDisposable
         {
-            private MarcelloDB.Collections.Collection<ImmutableObject, string, ObjectIndexDefinition> _chain;
+            private Collection<ImmutableObject, string, ObjectIndexDefinition> _chain;
 
             private readonly Session _session;
 
             private class ObjectIndexDefinition : IndexDefinition<ImmutableObject>
             {
                 public IndexedValue<ImmutableObject, int> Index { get; set; }
+
+                public IndexedValue<ImmutableObject, int> Id { get; set; }
             }
 
             public Chain()
@@ -88,11 +92,25 @@ namespace Imuject
                 }
             }
 
-            public void Add(ImmutableObject obj)
+            public int Insert(ImmutableObject obj)
             {
-                var previousObject = LastObject();
+                ImmutableObject previousObject = LastObject();
+                // If the object is new then we need to set the id to the next unique id available
+                if (obj.Version == -1)
+                {
+                    obj.Id = _chain.Indexes.Id.All.Keys.Max() + 1;
+                }
                 obj.InsertOp(previousObject.Index + 1, previousObject.Hash);
                 _chain.Persist(obj);
+                return obj.Id;
+            }
+
+            public int UniqueObjectCount
+            {
+                get
+                {
+                    return _chain.Indexes.Id.All.Keys.Count();
+                }
             }
 
             public int Count
