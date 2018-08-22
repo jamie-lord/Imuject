@@ -49,7 +49,7 @@ namespace Imuject
 
             public string CalculateHash()
             {
-                string stringForHashing = Index + Version + PreviousHash + Timestamp + Json;
+                string stringForHashing = Index + Id + Version + PreviousHash + Timestamp + Json;
                 SHA256Managed crypt = new SHA256Managed();
                 string hash = string.Empty;
                 byte[] crypto = crypt.ComputeHash(Encoding.ASCII.GetBytes(stringForHashing), 0, Encoding.ASCII.GetByteCount(stringForHashing));
@@ -65,7 +65,7 @@ namespace Imuject
         {
             private Collection<ImmutableObject, string, ObjectIndexDefinition> _chain;
 
-            private readonly Session _session;
+            private Session _session;
 
             private class ObjectIndexDefinition : IndexDefinition<ImmutableObject>
             {
@@ -147,7 +147,9 @@ namespace Imuject
 
             public void Dispose()
             {
+                _chain = null;
                 _session.Dispose();
+                _session = null;
             }
         }
     }
