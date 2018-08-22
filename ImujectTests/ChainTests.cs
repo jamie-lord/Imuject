@@ -8,7 +8,7 @@ using static Imuject.Database;
 namespace ImujectTests
 {
     [TestFixture]
-    public class InsertTests
+    public class ChainTests
     {
         private Faker _faker;
 
@@ -27,12 +27,12 @@ namespace ImujectTests
             }
 
             _faker = new Faker();
+            _chain = new Chain();
         }
 
         [TestCase]
-        public void InsertAllNew()
+        public void Insert()
         {
-            _chain = new Chain();
             for (int i = 0; i < 100; i++)
             {
                 var obj = new ImmutableObject(_faker.Random.String());
@@ -42,9 +42,8 @@ namespace ImujectTests
         }
 
         [TestCase]
-        public void InsertAndModify()
+        public void ModifyExisting()
         {
-            _chain = new Chain();
             for (int i = 0; i < 100; i++)
             {
                 var obj = new ImmutableObject(_faker.Random.String());
@@ -61,6 +60,27 @@ namespace ImujectTests
             }
 
             Assert.AreEqual(101, _chain.UniqueObjectCount);
+        }
+
+        [TestCase]
+        public void LatestObjectVersion()
+        {
+            var obj = new ImmutableObject(_faker.Random.String());
+            int id = _chain.Insert(obj);
+            Assert.AreEqual(1, id);
+            Assert.AreEqual(0, obj.Version);
+            obj.Json = _faker.Random.String();
+            int id1 = _chain.Insert(obj);
+            Assert.AreEqual(1, id1);
+            Assert.AreEqual(1, obj.Version);
+            obj.Json = _faker.Random.String();
+            int id2 = _chain.Insert(obj);
+            Assert.AreEqual(1, id2);
+            Assert.AreEqual(2, obj.Version);
+            var result = _chain.LatestVersion(1);
+            Assert.AreEqual(1, result.Id);
+            Assert.AreEqual(2, result.Version);
+            Assert.AreEqual(3, result.Index);
         }
 
         [TearDown]

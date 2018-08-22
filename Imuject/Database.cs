@@ -121,6 +121,11 @@ namespace Imuject
                 }
             }
 
+            public ImmutableObject LatestVersion(int id)
+            {
+                return _chain.Indexes.Id.All.Where(x => x.Id == id)?.OrderByDescending(x => x.Version).First();
+            }
+
             private ImmutableObject LastObject()
             {
                 return _chain.Indexes.Index.All.Descending.First();
