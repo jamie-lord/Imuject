@@ -5,20 +5,19 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Security.Cryptography;
 using System.Text;
+using MarcelloDB;
+using MarcelloDB.Platform;
+using MarcelloDB.Index;
+using MarcelloDB.Collections;
+using System.Linq;
 
 namespace Imuject
 {
     public class Database
     {
-        public Database()
-        {
-
-        }
-
         public void Create(string jsonObj)
         {
             var obj = JsonConvert.DeserializeObject(jsonObj);
-
         }
 
         public class ImmutableObject
@@ -28,25 +27,25 @@ namespace Imuject
                 Json = json;
             }
 
-            public string Json { get; }
+            public string Json { get; set; }
 
-            public string Hash { get; private set; }
+            public string Hash { get; set; }
 
-            public DateTime Timestamp { get; private set; }
+            public DateTime Timestamp { get; set; }
 
-            public string PreviousHash { get; private set; }
+            public string PreviousHash { get; set; }
 
-            public int Index { get; private set; }
+            public int Index { get; set; }
 
             public void InsertOp(int index, string previousHash)
             {
                 Index = index;
                 PreviousHash = previousHash;
                 Timestamp = DateTime.Now;
-                CalculateHash();
+                Hash = CalculateHash();
             }
 
-            private void CalculateHash()
+            public string CalculateHash()
             {
                 string stringForHashing = Index + PreviousHash + Timestamp + Json;
                 SHA256Managed crypt = new SHA256Managed();
@@ -56,26 +55,76 @@ namespace Imuject
                 {
                     hash += theByte.ToString("x2");
                 }
-                Hash = hash;
+                return hash;
             }
         }
 
-        public class Chain
+        public class Chain : IDisposable
         {
-            private IList<ImmutableObject> _chain = new List<ImmutableObject>();
+            private MarcelloDB.Collections.Collection<ImmutableObject, string, ObjectIndexDefinition> _chain;
+
+            private readonly Session _session;
+
+            private class ObjectIndexDefinition : IndexDefinition<ImmutableObject>
+            {
+                public IndexedValue<ImmutableObject, int> Index { get; set; }
+            }
 
             public Chain()
             {
-                var genesis = new ImmutableObject(string.Empty);
-                genesis.InsertOp(0, string.Empty);
-                _chain.Add(genesis);
+                var platform = new Platform();
+                _session = new Session(platform, Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+
+                var chainFile = _session["chain.data"];
+
+                _chain = chainFile.Collection<ImmutableObject, string, ObjectIndexDefinition>("objects", x => x.Hash);
+
+                if (!_chain.All.Any())
+                {
+                    var genesis = new ImmutableObject(string.Empty);
+                    genesis.InsertOp(0, string.Empty);
+
+                    _chain.Persist(genesis);
+                }
             }
 
             public void Add(ImmutableObject obj)
             {
-                string previousHash = _chain[_chain.Count - 1].Hash;
-                obj.InsertOp(_chain.Count, previousHash);
-                _chain.Add(obj);
+                var previousObject = LastObject();
+                obj.InsertOp(previousObject.Index + 1, previousObject.Hash);
+                _chain.Persist(obj);
+            }
+
+            public int Count
+            {
+                get
+                {
+                    return _chain.All.Count();
+                }
+            }
+
+            private ImmutableObject LastObject()
+            {
+                return _chain.Indexes.Index.All.Descending.First();
+            }
+
+            public bool Validate()
+            {
+                string previousHash = null;
+                foreach (var item in _chain.Indexes.Index.All)
+                {
+                    if (previousHash != null && item.PreviousHash != previousHash)
+                    {
+                        return false;
+                    }
+                    previousHash = item.CalculateHash();
+                }
+                return true;
+            }
+
+            public void Dispose()
+            {
+                _session.Dispose();
             }
         }
     }
