@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace Imuject
@@ -9,6 +8,8 @@ namespace Imuject
         private FileStream _indexStream;
 
         private object _indexStreamLock = new object();
+
+        private const int LongSize = sizeof(long);
 
         public Index()
         {
@@ -20,11 +21,11 @@ namespace Imuject
             long? location = null;
             lock (_indexStreamLock)
             {
-                long loc = sizeof(long) * index;
+                long loc = LongSize * index;
                 if (_indexStream.Length > loc)
                 {
                     _indexStream.Position = loc;
-                    byte[] data = new byte[sizeof(long)];
+                    byte[] data = new byte[LongSize];
                     _indexStream.Read(data, 0, data.Length);
                     location = BitConverter.ToInt64(data, 0);
                 }
@@ -34,10 +35,10 @@ namespace Imuject
 
         public void AddPositionToIndex(int index, long location)
         {
+            byte[] data = BitConverter.GetBytes(location);
             lock (_indexStreamLock)
             {
-                _indexStream.Position = sizeof(long) * index;
-                byte[] data = BitConverter.GetBytes(location);
+                _indexStream.Position = LongSize * index;
                 _indexStream.Write(data, 0, data.Length);
             }
         }
@@ -47,11 +48,7 @@ namespace Imuject
             int count = 0;
             lock (_indexStreamLock)
             {
-                long length = _indexStream.Length;
-                if (length > 0)
-                {
-                    count = (int)(length / sizeof(long));
-                }
+                count = (int)(_indexStream.Length / LongSize);
             }
             return count;
         }
@@ -59,15 +56,6 @@ namespace Imuject
         public int Last()
         {
             return Count() - 1;
-        }
-
-        public IEnumerable<(int, long)> Enumerable()
-        {
-            int count = Count();
-            for (int i = 0; i < count; i++)
-            {
-                yield return (i, GetPositionForIndex(i).Value);
-            }
         }
 
         public void Dispose()

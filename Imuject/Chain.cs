@@ -128,9 +128,10 @@ namespace Imuject
         {
             bool valid = true;
             string previousHash = null;
-            foreach ((int, long) item in _index.Enumerable())
+            int count = _index.Count();
+            for (int i = 0; i < count; i++)
             {
-                ImmutableObject obj = ReadObject(item.Item1);
+                ImmutableObject obj = ReadObject(i);
                 if (previousHash != null && obj.PreviousHash != previousHash)
                 {
                     valid = false;
