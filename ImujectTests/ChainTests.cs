@@ -25,6 +25,10 @@ namespace ImujectTests
             {
                 File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.index"));
             }
+            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.version.index")))
+            {
+                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.version.index"));
+            }
 
             _faker = new Faker();
             _chain = new Chain();
@@ -50,7 +54,6 @@ namespace ImujectTests
                 int originalId = _chain.Insert(obj);
                 int originalIndex = obj.Index;
                 Assert.AreEqual(0, obj.Version);
-                Debug.WriteLine($"Added object {i} {obj.Hash}");
 
                 obj.Json = _faker.Random.String();
                 int newId = _chain.Insert(obj);

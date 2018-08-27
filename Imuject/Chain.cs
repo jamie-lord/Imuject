@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using ZeroFormatter;
 
@@ -13,12 +12,12 @@ namespace Imuject
 
         private Index _index;
 
-        // Maps object ids to object indexes
-        private SortedDictionary<int, int> _latestVersions = new SortedDictionary<int, int>();
+        private VersionIndex _versionIndex;
 
         public Chain()
         {
             _index = new Index();
+            _versionIndex = new VersionIndex();
 
             _chainStream = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.data"), FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
@@ -39,7 +38,7 @@ namespace Imuject
                 _chainStream.Position = pos;
 
                 _index.SetAtIndex(obj.Index, pos);
-                _latestVersions[obj.Id] = obj.Index;
+                _versionIndex.SetAtIndex(obj.Id, obj.Index);
 
                 _chainStream.Write(data, 0, data.Length);
                 _chainStream.Flush();
@@ -85,7 +84,7 @@ namespace Imuject
             //// If the object is new then we need to set the id to the next unique id available
             if (obj.Version == -1)
             {
-                obj.Id = _index.Last() + 1;
+                obj.Id = _versionIndex.Last() + 1;
             }
             obj.InsertOp(previousObject.Index + 1, previousObject.Hash);
 
@@ -98,7 +97,7 @@ namespace Imuject
         {
             get
             {
-                return _latestVersions.Count;
+                return _versionIndex.Count();
             }
         }
 
@@ -112,9 +111,10 @@ namespace Imuject
 
         public ImmutableObject LatestVersion(int id)
         {
-            if (_latestVersions.TryGetValue(id, out int index))
+            int? index = _versionIndex.GetAtIndex(id);
+            if (index.HasValue)
             {
-                return ReadObject(index);
+                return ReadObject(index.Value);
             }
             return null;
         }
