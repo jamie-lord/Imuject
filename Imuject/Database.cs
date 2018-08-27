@@ -2,11 +2,9 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
-using System.Linq;
 using ZeroFormatter;
 using System.IO;
 using System.Collections.Generic;
-using System.Threading;
 
 namespace Imuject
 {
@@ -71,21 +69,78 @@ namespace Imuject
 
             private object _chainStreamLock = new object();
 
-            private SortedDictionary<int, long> _index = new SortedDictionary<int, long>();
+            private FileStream _indexStream;
+
+            private object _indexStreamLock = new object();
 
             // Maps object ids to object indexes
             private SortedDictionary<int, int> _latestVersions = new SortedDictionary<int, int>();
 
-            private SortedDictionary<int, (ImmutableObject, long)> _objs = new SortedDictionary<int, (ImmutableObject, long)>();
-
             public Chain()
             {
                 _chainStream = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.data"), FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                _indexStream = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.index"), FileMode.OpenOrCreate, FileAccess.ReadWrite);
+
                 if (!Any)
                 {
                     var genesis = new ImmutableObject() { Json = string.Empty };
                     genesis.InsertOp(0, string.Empty);
                     WriteObject(genesis);
+                }
+            }
+
+            private long? GetLocationForIndex(int index)
+            {
+                long? location = null;
+                lock (_indexStreamLock)
+                {
+                    long loc = sizeof(long) * index;
+                    if (_indexStream.Length > loc)
+                    {
+                        _indexStream.Position = loc;
+                        byte[] data = new byte[sizeof(long)];
+                        _indexStream.Read(data, 0, data.Length);
+                        location = BitConverter.ToInt64(data, 0);
+                    }
+                }
+                return location;
+            }
+
+            private void AddLocationToIndex(int index, long location)
+            {
+                lock (_indexStreamLock)
+                {
+                    _indexStream.Position = sizeof(long) * index;
+                    byte[] data = BitConverter.GetBytes(location);
+                    _indexStream.Write(data, 0, data.Length);
+                }
+            }
+
+            private int IndexCount()
+            {
+                int count = 0;
+                lock (_indexStreamLock)
+                {
+                    long length = _indexStream.Length;
+                    if (length > 0)
+                    {
+                        count = (int)(length / sizeof(long));
+                    }
+                }
+                return count;
+            }
+
+            private int LastIndex()
+            {
+                return IndexCount() - 1;
+            }
+
+            private IEnumerable<(int, long)> Index()
+            {
+                int count = IndexCount();
+                for (int i = 0; i < count; i++)
+                {
+                    yield return (i, GetLocationForIndex(i).Value);
                 }
             }
 
@@ -97,9 +152,8 @@ namespace Imuject
                     long pos = _chainStream.Length;
                     _chainStream.Position = pos;
 
-                    _index.Add(obj.Index, pos);
+                    AddLocationToIndex(obj.Index, pos);
                     _latestVersions[obj.Id] = obj.Index;
-                    _objs.Add(obj.Index, (obj, data.Length));
 
                     _chainStream.Write(data, 0, data.Length);
                     _chainStream.Flush();
@@ -121,12 +175,14 @@ namespace Imuject
 
             private ImmutableObject ReadObject(int index)
             {
-                if (!_index.TryGetValue(index, out long beginning))
+                long? beginning = GetLocationForIndex(index);
+                if (!beginning.HasValue)
                 {
                     throw new Exception("Object not in index");
                 }
 
-                if (!_index.TryGetValue(index + 1, out long end))
+                long? end = GetLocationForIndex(index + 1);
+                if (!end.HasValue)
                 {
                     lock (_chainStreamLock)
                     {
@@ -134,7 +190,7 @@ namespace Imuject
                     }
                 }
 
-                return ReadObject(beginning, end);
+                return ReadObject(beginning.Value, end.Value);
             }
 
             public int Insert(ImmutableObject obj)
@@ -143,7 +199,7 @@ namespace Imuject
                 //// If the object is new then we need to set the id to the next unique id available
                 if (obj.Version == -1)
                 {
-                    obj.Id = LastIndex + 1;
+                    obj.Id = LastIndex() + 1;
                 }
                 obj.InsertOp(previousObject.Index + 1, previousObject.Hash);
 
@@ -160,31 +216,11 @@ namespace Imuject
                 }
             }
 
-            public int LastIndex
-            {
-                get
-                {
-                    if (_index.Count > 0)
-                    {
-                        return _index.Last().Key;
-                    }
-                    return 0;
-                }
-            }
-
             private bool Any
             {
                 get
                 {
-                    return _index.Count > 0 ? true : false;
-                }
-            }
-
-            public int Count
-            {
-                get
-                {
-                    return _index.Count;
+                    return IndexCount() > 0 ? true : false;
                 }
             }
 
@@ -199,16 +235,16 @@ namespace Imuject
 
             private ImmutableObject LastObject()
             {
-                return ReadObject(_index.Last().Key);
+                return ReadObject(LastIndex());
             }
 
             public bool Validate()
             {
                 bool valid = true;
                 string previousHash = null;
-                foreach (KeyValuePair<int, long> item in _index)
+                foreach ((int, long) item in Index())
                 {
-                    ImmutableObject obj = ReadObject(item.Key);
+                    ImmutableObject obj = ReadObject(item.Item1);
                     if (previousHash != null && obj.PreviousHash != previousHash)
                     {
                         valid = false;
