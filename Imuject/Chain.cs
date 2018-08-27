@@ -38,7 +38,7 @@ namespace Imuject
                 long pos = _chainStream.Length;
                 _chainStream.Position = pos;
 
-                _index.AddPositionToIndex(obj.Index, pos);
+                _index.SetAtIndex(obj.Index, pos);
                 _latestVersions[obj.Id] = obj.Index;
 
                 _chainStream.Write(data, 0, data.Length);
@@ -61,13 +61,13 @@ namespace Imuject
 
         private ImmutableObject ReadObject(int index)
         {
-            long? beginning = _index.GetPositionForIndex(index);
+            long? beginning = _index.GetAtIndex(index);
             if (!beginning.HasValue)
             {
                 throw new Exception("Object not in index");
             }
 
-            long? end = _index.GetPositionForIndex(index + 1);
+            long? end = _index.GetAtIndex(index + 1);
             if (!end.HasValue)
             {
                 lock (_chainStreamLock)
