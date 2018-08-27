@@ -33,9 +33,9 @@ namespace ImujectTests
         [TestCase]
         public void Insert()
         {
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 10; i++)
             {
-                var obj = new ImmutableObject(_faker.Random.String());
+                var obj = new ImmutableObject() { Json = _faker.Random.String() };
                 _chain.Insert(obj);
                 Debug.WriteLine($"Added object {i} {obj.Hash}");
             }
@@ -46,7 +46,7 @@ namespace ImujectTests
         {
             for (int i = 0; i < 100; i++)
             {
-                var obj = new ImmutableObject(_faker.Random.String());
+                var obj = new ImmutableObject() { Json = _faker.Random.String() };
                 int originalId = _chain.Insert(obj);
                 int originalIndex = obj.Index;
                 Assert.AreEqual(0, obj.Version);
@@ -65,7 +65,7 @@ namespace ImujectTests
         [TestCase]
         public void LatestObjectVersion()
         {
-            var obj = new ImmutableObject(_faker.Random.String());
+            var obj = new ImmutableObject() { Json = _faker.Random.String() };
             int id = _chain.Insert(obj);
             Assert.AreEqual(1, id);
             Assert.AreEqual(0, obj.Version);
