@@ -2,8 +2,8 @@
 using System.Diagnostics;
 using System.IO;
 using Bogus;
+using Imuject;
 using NUnit.Framework;
-using static Imuject.Database;
 
 namespace ImujectTests
 {
@@ -21,9 +21,9 @@ namespace ImujectTests
             {
                 File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.data"));
             }
-            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "journal")))
+            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.index")))
             {
-                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "journal"));
+                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.index"));
             }
 
             _faker = new Faker();
@@ -33,7 +33,7 @@ namespace ImujectTests
         [TestCase]
         public void Insert()
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 var obj = new ImmutableObject() { Json = _faker.Random.String() };
                 _chain.Insert(obj);
@@ -44,7 +44,7 @@ namespace ImujectTests
         [TestCase]
         public void ModifyExisting()
         {
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 var obj = new ImmutableObject() { Json = _faker.Random.String() };
                 int originalId = _chain.Insert(obj);
@@ -59,7 +59,7 @@ namespace ImujectTests
                 Assert.AreNotEqual(obj.Index, originalIndex);
             }
 
-            Assert.AreEqual(101, _chain.UniqueObjectCount);
+            Assert.AreEqual(1001, _chain.UniqueObjectCount);
         }
 
         [TestCase]
