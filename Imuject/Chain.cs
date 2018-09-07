@@ -14,12 +14,12 @@ namespace Imuject
 
         private VersionIndex _versionIndex;
 
-        public Chain()
+        public Chain(string dbName)
         {
-            _index = new Index();
-            _versionIndex = new VersionIndex();
+            _index = new Index(dbName);
+            _versionIndex = new VersionIndex(dbName);
 
-            _chainStream = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.data"), FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            _chainStream = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{dbName}.data"), FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
             if (!Any)
             {
@@ -146,6 +146,8 @@ namespace Imuject
         {
             _chainStream.Flush();
             _chainStream.Dispose();
+            _index.Dispose();
+            _versionIndex.Dispose();
         }
     }
 }

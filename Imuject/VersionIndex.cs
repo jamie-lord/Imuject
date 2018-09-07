@@ -5,8 +5,8 @@ namespace Imuject
 {
     public class VersionIndex : BaseIndex<int>
     {
-        public VersionIndex()
-            : base(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.version.index"))
+        public VersionIndex(string dbName)
+            : base(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{dbName}.version.index"))
         {
         }
     }

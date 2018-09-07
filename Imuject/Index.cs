@@ -5,8 +5,8 @@ namespace Imuject
 {
     public class Index : BaseIndex<long>
     {
-        public Index()
-            : base(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.index"))
+        public Index(string dbName)
+            : base(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{dbName}.index"))
         {
         }
     }

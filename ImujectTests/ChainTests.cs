@@ -14,24 +14,26 @@ namespace ImujectTests
 
         private Chain _chain;
 
+        private string _dbName = Guid.NewGuid().ToString();
+
         [SetUp]
         public void Setup()
         {
-            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.data")))
+            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.data")))
             {
-                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.data"));
+                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.data"));
             }
-            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.index")))
+            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.index")))
             {
-                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.index"));
+                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.index"));
             }
-            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.version.index")))
+            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.version.index")))
             {
-                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "chain.version.index"));
+                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.version.index"));
             }
 
             _faker = new Faker();
-            _chain = new Chain();
+            _chain = new Chain(_dbName);
         }
 
         [TestCase]
@@ -90,8 +92,10 @@ namespace ImujectTests
         public void TearDown()
         {
             Assert.IsTrue(_chain.Validate());
-
             _chain.Dispose();
+            File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.data"));
+            File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.index"));
+            File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.version.index"));
         }
     }
 }
