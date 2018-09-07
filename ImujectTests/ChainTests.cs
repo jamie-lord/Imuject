@@ -64,7 +64,7 @@ namespace ImujectTests
                 Assert.AreNotEqual(obj.Index, originalIndex);
             }
 
-            Assert.AreEqual(1001, _chain.UniqueObjectCount);
+            Assert.AreEqual(1000, _chain.UniqueObjectCount);
         }
 
         [TestCase]
@@ -86,6 +86,22 @@ namespace ImujectTests
             Assert.AreEqual(1, result.Id);
             Assert.AreEqual(2, result.Version);
             Assert.AreEqual(3, result.Index);
+        }
+
+        [TestCase]
+        public void UniqueObjectCount()
+        {
+            var obj = new ImmutableObject() { Json = _faker.Random.String() };
+            _chain.Insert(obj);
+            Assert.AreEqual(1, _chain.UniqueObjectCount);
+            obj.Json = _faker.Random.String();
+            Assert.AreEqual(1, _chain.UniqueObjectCount);
+            var obj2 = new ImmutableObject() { Json = _faker.Random.String() };
+            _chain.Insert(obj2);
+            Assert.AreEqual(2, _chain.UniqueObjectCount);
+            obj2.Json = _faker.Random.String();
+            _chain.Insert(obj2);
+            Assert.AreEqual(2, _chain.UniqueObjectCount);
         }
 
         [TearDown]

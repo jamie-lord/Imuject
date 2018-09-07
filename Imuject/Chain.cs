@@ -81,7 +81,7 @@ namespace Imuject
         public int Insert(ImmutableObject obj)
         {
             ImmutableObject previousObject = LastObject();
-            //// If the object is new then we need to set the id to the next unique id available
+            // If the object is new then we need to set the id to the next unique id available
             if (obj.Version == -1)
             {
                 obj.Id = _versionIndex.Last() + 1;
@@ -93,11 +93,15 @@ namespace Imuject
             return obj.Id;
         }
 
+        /// <summary>
+        /// Count of unique object Ids.
+        /// Does not include the genesis object.
+        /// </summary>
         public int UniqueObjectCount
         {
             get
             {
-                return _versionIndex.Count();
+                return _versionIndex.Count() - 1;
             }
         }
 
