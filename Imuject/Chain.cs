@@ -10,14 +10,14 @@ namespace Imuject
 
         private object _chainStreamLock = new object();
 
-        private Index _index;
+        private Index<long> _index;
 
-        private VersionIndex _versionIndex;
+        private Index<int> _latestVersionIndex;
 
         public Chain(string dbName)
         {
-            _index = new Index(dbName);
-            _versionIndex = new VersionIndex(dbName);
+            _index = new Index<long>(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{dbName}.index"));
+            _latestVersionIndex = new Index<int>(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{dbName}.latestVersion.index"));
 
             _chainStream = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{dbName}.data"), FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
@@ -38,7 +38,7 @@ namespace Imuject
                 _chainStream.Position = pos;
 
                 _index.SetAtIndex(obj.Index, pos);
-                _versionIndex.SetAtIndex(obj.Id, obj.Index);
+                _latestVersionIndex.SetAtIndex(obj.Id, obj.Index);
 
                 _chainStream.Write(data, 0, data.Length);
                 _chainStream.Flush();
@@ -84,7 +84,7 @@ namespace Imuject
             // If the object is new then we need to set the id to the next unique id available
             if (obj.Version == -1)
             {
-                obj.Id = _versionIndex.Last() + 1;
+                obj.Id = _latestVersionIndex.Last() + 1;
             }
             obj.InsertOp(previousObject.Index + 1, previousObject.Hash);
 
@@ -101,7 +101,7 @@ namespace Imuject
         {
             get
             {
-                return _versionIndex.Count() - 1;
+                return _latestVersionIndex.Count() - 1;
             }
         }
 
@@ -115,7 +115,7 @@ namespace Imuject
 
         public ImmutableObject LatestVersion(int id)
         {
-            int? index = _versionIndex.GetAtIndex(id);
+            int? index = _latestVersionIndex.GetAtIndex(id);
             if (index.HasValue)
             {
                 return ReadObject(index.Value);
@@ -151,7 +151,7 @@ namespace Imuject
             _chainStream.Flush();
             _chainStream.Dispose();
             _index.Dispose();
-            _versionIndex.Dispose();
+            _latestVersionIndex.Dispose();
         }
     }
 }
