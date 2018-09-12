@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using ZeroFormatter;
 
@@ -121,6 +122,14 @@ namespace Imuject
                 return ReadObject(index.Value);
             }
             return null;
+        }
+
+        public IEnumerable<ImmutableObject> PreviouVersions(int id)
+        {
+            foreach (int index in _latestVersionIndex.Get(id))
+            {
+                yield return ReadObject(index);
+            }
         }
 
         private ImmutableObject LastObject()

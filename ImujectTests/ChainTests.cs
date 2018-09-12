@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Bogus;
 using Imuject;
 using NUnit.Framework;
@@ -97,6 +98,44 @@ namespace ImujectTests
         }
 
         [TestCase]
+        public void PreviousObjectVersions()
+        {
+            var obj = new ImmutableObject() { Json = _faker.Random.String() };
+            int id = _chain.Insert(obj);
+            Assert.AreEqual(1, id);
+            Assert.AreEqual(0, obj.Version);
+            obj.Json = _faker.Random.String();
+            _chain.Insert(new ImmutableObject
+            {
+                Json = _faker.Random.String()
+            });
+            int id1 = _chain.Insert(obj);
+            Assert.AreEqual(1, id1);
+            Assert.AreEqual(1, obj.Version);
+            _chain.Insert(new ImmutableObject
+            {
+                Json = _faker.Random.String()
+            });
+            obj.Json = _faker.Random.String();
+            int id2 = _chain.Insert(obj);
+            Assert.AreEqual(1, id2);
+            Assert.AreEqual(2, obj.Version);
+            _chain.Insert(new ImmutableObject
+            {
+                Json = _faker.Random.String()
+            });
+            var allVersions = _chain.PreviouVersions(id2).ToList();
+            Assert.AreEqual(3, allVersions.Count);
+            Assert.AreEqual(1, allVersions[0].Id);
+            Assert.AreEqual(1, allVersions[1].Id);
+            Assert.AreEqual(1, allVersions[2].Id);
+            Assert.AreEqual(2, allVersions[0].Version);
+            Assert.AreEqual(1, allVersions[1].Version);
+            Assert.AreEqual(0, allVersions[2].Version);
+            Assert.AreEqual(4, _chain.UniqueObjectCount);
+        }
+
+        [TestCase]
         public void UniqueObjectCount()
         {
             var obj = new ImmutableObject() { Json = _faker.Random.String() };
@@ -122,7 +161,6 @@ namespace ImujectTests
             File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.version.index"));
             File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.latestVersion.loi"));
             File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.latestVersion.oi"));
-
         }
     }
 }
