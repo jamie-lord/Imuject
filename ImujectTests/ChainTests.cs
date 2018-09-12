@@ -31,6 +31,14 @@ namespace ImujectTests
             {
                 File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.version.index"));
             }
+            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.latestVersion.loi")))
+            {
+                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.latestVersion.loi"));
+            }
+            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.latestVersion.oi")))
+            {
+                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.latestVersion.oi"));
+            }
 
             _faker = new Faker();
             _chain = new Chain(_dbName);
@@ -112,6 +120,9 @@ namespace ImujectTests
             File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.data"));
             File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.index"));
             File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.version.index"));
+            File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.latestVersion.loi"));
+            File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{_dbName}.latestVersion.oi"));
+
         }
     }
 }

@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Imuject
 {
-    public class LinkedIndex<T>
+    public class LinkedIndex<T> : IDisposable
         where T : struct
     {
         private Index<int> _latestObjectIndex;
@@ -22,8 +24,6 @@ namespace Imuject
         {
             lock (_writeLock)
             {
-                // Get location for previous linked item if it exists
-
                 int? locationOfCurrentVersion = _latestObjectIndex.GetAtIndex(index);
 
                 LinkedIndexItem<T> item = new LinkedIndexItem<T>
@@ -33,15 +33,16 @@ namespace Imuject
 
                 item.PreviousItem = locationOfCurrentVersion ?? -1;
 
-                // Add the new item to the end of object index
-
                 int itemIndex = _objectIndex.Last() + 1;
-                _objectIndex.SetAtIndex(itemIndex, item);
-
-                // Update the latest object index with new pointer to new object
+                _objectIndex.SetAtIndex(itemIndex, item.ToArray());
 
                 _latestObjectIndex.SetAtIndex(index, itemIndex);
             }
+        }
+
+        public T? GetLatest(int index)
+        {
+            return Get(index)?.FirstOrDefault();
         }
 
         public IEnumerable<T> Get(int index)
@@ -55,7 +56,13 @@ namespace Imuject
             int objectIndex = firstObjectIndex.Value;
             while (objectIndex != -1)
             {
-                LinkedIndexItem<T>? item = _objectIndex.GetAtIndex(objectIndex);
+                byte[] data = _objectIndex.GetDataAtIndex(objectIndex);
+
+                LinkedIndexItem<T>? item = null;
+                if (data != null)
+                {
+                    item = LinkedIndexItem<T>.FromArray(data);
+                }
 
                 if (item != null)
                 {
@@ -68,6 +75,28 @@ namespace Imuject
                 }
             }
         }
+
+        public int Last()
+        {
+            return _latestObjectIndex.Last();
+        }
+
+        public int Count()
+        {
+            return _latestObjectIndex.Count();
+        }
+
+        public void Dispose()
+        {
+            lock (_writeLock)
+            {
+                _latestObjectIndex.Dispose();
+                _objectIndex.Dispose();
+            }
+            _latestObjectIndex = null;
+            _objectIndex = null;
+            _writeLock = null;
+        }
     }
 
     public struct LinkedIndexItem<T>
@@ -76,5 +105,27 @@ namespace Imuject
         public T Content { get; set; }
 
         public int PreviousItem { get; set; }
+
+        public byte[] ToArray()
+        {
+            MemoryStream stream = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stream);
+
+            writer.Write(ConverterHelper.GetBytes(Content));
+            writer.Write(PreviousItem);
+
+            return stream.ToArray();
+        }
+
+        public static LinkedIndexItem<T> FromArray(byte[] bytes)
+        {
+            BinaryReader reader = new BinaryReader(new MemoryStream(bytes));
+            LinkedIndexItem<T> s = default(LinkedIndexItem<T>);
+
+            s.Content = ConverterHelper.FromBytes<T>(reader.ReadBytes(SizeHelper.SizeOf(typeof(T))));
+            s.PreviousItem = reader.ReadInt32();
+
+            return s;
+        }
     }
 }

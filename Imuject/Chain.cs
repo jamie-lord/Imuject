@@ -12,12 +12,12 @@ namespace Imuject
 
         private Index<long> _index;
 
-        private Index<int> _latestVersionIndex;
+        private LinkedIndex<int> _latestVersionIndex;
 
         public Chain(string dbName)
         {
             _index = new Index<long>(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{dbName}.index"));
-            _latestVersionIndex = new Index<int>(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{dbName}.latestVersion.index"));
+            _latestVersionIndex = new LinkedIndex<int>(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{dbName}.latestVersion");
 
             _chainStream = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{dbName}.data"), FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
@@ -38,7 +38,7 @@ namespace Imuject
                 _chainStream.Position = pos;
 
                 _index.SetAtIndex(obj.Index, pos);
-                _latestVersionIndex.SetAtIndex(obj.Id, obj.Index);
+                _latestVersionIndex.Add(obj.Id, obj.Index);
 
                 _chainStream.Write(data, 0, data.Length);
                 _chainStream.Flush();
@@ -115,7 +115,7 @@ namespace Imuject
 
         public ImmutableObject LatestVersion(int id)
         {
-            int? index = _latestVersionIndex.GetAtIndex(id);
+            int? index = _latestVersionIndex.GetLatest(id);
             if (index.HasValue)
             {
                 return ReadObject(index.Value);

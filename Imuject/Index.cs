@@ -24,23 +24,42 @@ namespace Imuject
         public T? GetAtIndex(int index)
         {
             T? obj = null;
+            byte[] data = GetDataAtIndex(index);
+            if (data != null)
+            {
+                obj = ConverterHelper.FromBytes<T>(data);
+            }
+            return obj;
+        }
+
+        public byte[] GetDataAtIndex(int index)
+        {
+            byte[] data = null;
             lock (_streamLock)
             {
                 long loc = _typeSize * index;
                 if (_stream.Length > loc)
                 {
                     _stream.Position = loc;
-                    byte[] data = new byte[_typeSize];
+                    data = new byte[_typeSize];
                     _stream.Read(data, 0, data.Length);
-                    obj = ConverterHelper.FromBytes<T>(data);
                 }
             }
-            return obj;
+            return data;
         }
 
         public void SetAtIndex(int index, T obj)
         {
             byte[] data = ConverterHelper.GetBytes(obj);
+            SetAtIndex(index, data);
+        }
+
+        public void SetAtIndex(int index, byte[] data)
+        {
+            if (data.Length != _typeSize)
+            {
+                throw new Exception($"Data to set at index {index} is not the correct length");
+            }
             lock (_streamLock)
             {
                 _stream.Position = _typeSize * index;
